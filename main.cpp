@@ -1,23 +1,23 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-//STD Libs
-#include <stdlib.h>
-#include <stdio.h>
+
 #include <iostream>
 #include <cmath>		//For sin, cos...
-#include <cstdlib>  //For random
-#include <time.h>
+
 #include <random>
+std::mt19937_64 eng;  // a core engine class 
+std::uniform_real_distribution<float> pi(0,M_PI);   
+std::uniform_real_distribution<float> dis(-1,1);
+std::uniform_real_distribution<float> dis2(-0.01,0.01);
+
+
 #include <thread>
 #include <mutex>
-
-// a global instance of std::mutex to protect global variable
+//a global instance of std::mutex to protect global variable
 std::mutex myMutex;
 
-  std::mt19937 eng;  // a core engine class 
-  std::uniform_real_distribution<float> pi(0,M_PI);   
-	std::uniform_real_distribution<float> dis(-1,1);
+
 #define GLM_ENABLE_EXPERIMENTAL
 
 //GLM
@@ -25,6 +25,8 @@ std::mutex myMutex;
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp> //to string
+
+
 //ourShader
 #include "Shader.h"
 
@@ -34,12 +36,26 @@ std::mutex myMutex;
 
 using namespace std;
 
+//--------------------------------------
+// CONFIG
+//-------------------------------------
 
-const int WIDTH = 1280, HEIGHT = 720;
+
+const int WIDTH = 1280, HEIGHT = 720; // initial size of window
+
+const int AMOUNT_OF_BOIDS = 100;
+const int GENERATION_RADIUS_FOR_BOIDS = 100;
+
+const int PERCEPTION_RADIUS_BINDUNG = 100;
+
+
+//--------------------------------------
+
+
+
 
 vector<Boid> BOIDS; //vector with boid objects
-bool RUNNING = true;
-
+bool RUNNING = true; //To stop threads later (clean after yourself)
 
 glm::mat4 *setupBoids(int amount , float radius_max){
 
@@ -50,6 +66,7 @@ glm::mat4 *setupBoids(int amount , float radius_max){
 
 	glm::mat4* modelMatrices = new glm::mat4[amount];
 
+	cout << "Generating positions for Boids: " << endl;
 	for (int i = 0; i < amount; ++i){
 		//Generating random points inside a sphere with "kugelkoordinaten"
 		glm::mat4 model(1.0f);
@@ -66,26 +83,11 @@ glm::mat4 *setupBoids(int amount , float radius_max){
 		model = glm::translate(model, position);
 
 		//Generate random angle and rotate by random vec3
-		rotAngle = dis(eng) * 360;
-		rotVec = glm::normalize(glm::vec3(dis(eng),dis(eng),dis(eng)));
-
-		//Push to model matirx
-		model = glm::rotate(model, rotAngle, rotVec);
-		//Velocity (also random) normalized to length 1
-		
+		rotVec = glm::vec3(dis2(eng),dis2(eng),dis2(eng));
 
 
-		//Create a object for each boid (WIP)
-		float rotation[9] = {0.0};
-		const float *pSource = (const float*)glm::value_ptr(model);
-		for (int i = 0; i < 9; ++i)
-		{
-			rotation[i] = pSource[i];
-		}
-		glm::mat3 rotationmat3 = glm::make_mat3(rotation); 
-		
-		Boid my_boid( position, rotationmat3*std_vector_boid);
-		BOIDS.push_back(my_boid); //pos,vel
+		Boid my_boid(position, rotVec); //(pos,vel)
+		BOIDS.push_back(my_boid); 
 		BOIDS[i].setModelMatrix(model);
 
 	}
@@ -98,15 +100,23 @@ void timestep(double function_call_delay){
 	double startTime = clock()/(CLOCKS_PER_SEC/1000); //Start time in ms
 	while(RUNNING){
 		while( (clock()/(CLOCKS_PER_SEC/1000)) - startTime > function_call_delay){
-			/*Apply Force*/
-			//WIP
 
-			/*updates models*/
-			std::lock_guard<std::mutex> guard(myMutex); // the access to this function is mutually exclusive
-			for (int i = 0; i < BOIDS.size(); ++i)
-			{
-				BOIDS[i].timestep(1.0f);
+			//-------------------------------------
+			// Apply Force
+			//-------------------------------------
+			for (int i = 0; i < BOIDS.size(); ++i){
+				//BOIDS[i].applyforce(xxx);//wip 
 			}
+
+			//-------------------------------------
+			// Do timestep !
+			//-------------------------------------
+			std::lock_guard<std::mutex> guard(myMutex); // the access to this function is mutually exclusive
+			for (int i = 0; i < BOIDS.size(); ++i){		
+				BOIDS[i].timestep(1.0f);
+				BOIDS[i].resetforce(); /*After the timestep is calculated reset force (acceleration)*/
+			}
+
 			startTime = clock()/(CLOCKS_PER_SEC/1000); //Reset time
 		}
 	}
@@ -174,7 +184,7 @@ int main(void){
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
 	//Build and compile our shader program
-	Shader ourShader( "/media/sebastian/Daten/Programming/Flocking/c++ (Ubuntu)/res/shaders/core.vs", "/media/sebastian/Daten/Programming/Flocking/c++ (Ubuntu)/res/shaders/core.frag" );
+	Shader ourShader( "./res/shaders/core.vs", "./res/shaders/core.frag" );
 	
 	GLfloat vertices2[] =
 	{
@@ -216,70 +226,61 @@ int main(void){
 	glEnableVertexAttribArray( 1 );	
 
 	glBindVertexArray( 0 ); // Unbind VAO (it's always a good thing to unbind any buffer/array //to prevent strange bugs)
-  glEnable(GL_DEPTH_TEST);  
-  
-  //Init rng
-  srand (time(NULL));
-  int amount = 1500;
+	glEnable(GL_DEPTH_TEST);  
+
+	//Init rng
+	srand (time(NULL));
 
 
+	//-----------------------------------------------------------------------------
+	// Setup Boids
+	//-----------------------------------------------------------------------------
+	glm::mat4* modelMatrices;
+	modelMatrices = setupBoids(AMOUNT_OF_BOIDS, GENERATION_RADIUS_FOR_BOIDS);
 
-  //-----------------------------------------------------------------------------
-  // Setup Boids
-  //-----------------------------------------------------------------------------
-  glm::mat4* modelMatrices;
-  modelMatrices = setupBoids(amount, 200);
 
-
-  //--------------------------------------
-  // Timestep threaded (async & timed)
 	//--------------------------------------
-  std::thread t1(timestep, 40);
+	// Timestep function threaded (async & timed)
+	//--------------------------------------
+	std::thread t1(timestep, 40);
 
 
 
 
-  /*FPS counter*/
-  double lastTime = glfwGetTime();
-  int nbFrames = 0;
+	/*FPS counter*/
+	double lastTime = glfwGetTime();
+	int nbFrames = 0;
 	/* Loop until the user closes the window */
-  while (!glfwWindowShouldClose(window))
-  {
-  	//------------------------------------------
-  	//*fps*
+	while (!glfwWindowShouldClose(window))
+	{
+		//------------------------------------------
+		//*fps*
   	//------------------------------------------
 		// Measure speed
 		double currentTime = glfwGetTime();
 		nbFrames++;
-		if ( currentTime - lastTime >= 1.0 ){ // If last prinf() was more than 1 sec ago
+		if ( currentTime - lastTime >= 5.0 ){ // If last prinf() was more than 5 sec ago
 			// printf and reset timer
-			cout << 1000.0/double(nbFrames) <<"ms/frame (" << nbFrames << " fps)" << endl;
+			cout << 5000.0/double(nbFrames) <<"ms/frame (" << nbFrames/5 << " fps)" << endl;
 			nbFrames = 0;
-			lastTime += 1.0;
-
-
+			lastTime += 5.0;
 		}
-		//
-
-		/* Poll for and process events */
 		
-  	float ratio;
 
-		/*Set Viewport to window size*/
-  	int width, height;
-  	glfwGetFramebufferSize(window, &width, &height);
-  	ratio = width / (float) height;
-  	glViewport(0, 0, width, height);
+		/* Set Viewport to window size */
+		float ratio;
+		int width, height;
+		glfwGetFramebufferSize(window, &width, &height);
+		ratio = width / (float) height;
+		glViewport(0, 0, width, height);
 
 
-		/* Render here */
-
-		//clear color and depth buffer 
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		/* clear color and depth buffer */ 
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f); //Backgroundcolor
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-		//Use our Shader
+		// Use our Shader (Shader.h)
 		ourShader.Use();
 
 		// Set projections matrix
@@ -297,11 +298,12 @@ int main(void){
 
 		ourShader.setMat4( "camera", camera); //Push into gpu
 
+
+
 		//-------------------------------------
 		// Draw containers (Boids)
 		//-------------------------------------
-
-		for (int i = 0; i < amount; ++i)
+		for (int i = 0; i < AMOUNT_OF_BOIDS; ++i)
 		{
 			//cout << glm::to_string(modelMatrices[i]);
 			std::lock_guard<std::mutex> guard(myMutex);
@@ -311,26 +313,14 @@ int main(void){
 			glBindVertexArray(0);
 		}
 
-
-		//------------------------------------
-		//* Update all Boids* (timestep)
-		//------------------------------------
-
-		/*
-		for (int i = 0; i < amount; ++i)
-		{
-			BOIDS[i].timestep(0.002f);
-		}
-		*/
-
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
-  }
-  RUNNING = false;
-  glfwTerminate();
-  return 0;
+	}
+	RUNNING = false; //To stop all other threads
+	glfwTerminate();
+	return 0;
 
 
 }
