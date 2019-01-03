@@ -4,7 +4,9 @@
 using namespace std;
 
 
+
 float increment = 1;
+bool fullscreen = false;
 //Key callback for now only escape ;)
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -16,6 +18,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if ((key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_RIGHT_CONTROL) && action == GLFW_RELEASE){
 		increment = 1;
 	}	
+
 }
 
 
@@ -66,7 +69,7 @@ void mouseButton_callback(GLFWwindow* window, int button, int action, int mods){
 
 }
 
-double zZoom = -200; //init
+
 void scroll_callback(GLFWwindow* window, double xOffset, double yOffset){
 	if(yOffset > 0){
 		//Zoom in

@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <cmath>		//For sin, cos...
+#include <vector>
 
 #include <random>
 std::mt19937_64 eng;  // a core engine class 
@@ -42,12 +43,22 @@ using namespace std;
 
 
 const int WIDTH = 1280, HEIGHT = 720; // initial size of window
+double zZoom = -20; //initial zoom
 
-const int AMOUNT_OF_BOIDS = 100;
-const int GENERATION_RADIUS_FOR_BOIDS = 100;
 
-const int PERCEPTION_RADIUS_BINDUNG = 100;
+const int AMOUNT_OF_BOIDS = 500;
+const int GENERATION_RADIUS_FOR_BOIDS = 400;
 
+
+
+const int PERCEPTION_RADIUS_COHESION 		= 20;
+const int PERCEPTION_RADIUS_ALIGNMENT 	= 20;
+const int PERCEPTION_RADIUS_SEPARATION 	= 10;
+
+const float WEIGHT_FAKTOR_RADIUS_TOCENTER_FORCE = 25.0f;
+
+const float MAX_FORCE_MAGNITUDE = 0.01;
+const float MAX_SPEED = 0.5;
 
 //--------------------------------------
 
@@ -105,7 +116,10 @@ void timestep(double function_call_delay){
 			// Apply Force
 			//-------------------------------------
 			for (int i = 0; i < BOIDS.size(); ++i){
-				//BOIDS[i].applyforce(xxx);//wip 
+				BOIDS[i].applyforce(BOIDS[i].force_cohesion());
+				BOIDS[i].applyforce(BOIDS[i].force_alignment());
+				BOIDS[i].applyforce(BOIDS[i].force_separation());
+				BOIDS[i].applyforce(BOIDS[i].force_toCenter());
 			}
 
 			//-------------------------------------
@@ -242,7 +256,7 @@ int main(void){
 	//--------------------------------------
 	// Timestep function threaded (async & timed)
 	//--------------------------------------
-	std::thread t1(timestep, 40);
+	std::thread t1(timestep, 20);
 
 
 

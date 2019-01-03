@@ -10,6 +10,8 @@ extern bool cursorInsideWindow;
 extern bool rightMouseButtonPressed;
 extern double zZoom;
 extern double xRot, yRot; 
+extern const int WIDTH,HEIGHT;
+
 
 /*functions*/
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
