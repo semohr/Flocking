@@ -6,6 +6,8 @@ This also creates a fun chaotic behaviour.
 
 One could also move the visible frame according to the center of mass, but that is a project for another day ;)
 
+The frame can be controlled with the cursor (see `callback.cpp`).
+
 ## Example
 
 ![Example](./example.gif)
@@ -28,7 +30,7 @@ make all
 ./main.exec
 ```
 
-Only tested on windows, if one wants to run it on windows, it is probably necessary to link against
+Only tested on linux, if one wants to run it on windows, it is probably necessary to link against
 ```
 -lopengl32 -ldl -lglfw3 -lstdc++
 ```
