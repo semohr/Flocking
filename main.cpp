@@ -18,7 +18,6 @@ std::uniform_real_distribution<float> dis2(-0.01,0.01);
 //a global instance of std::mutex to protect global variable
 std::mutex myMutex;
 
-
 #define GLM_ENABLE_EXPERIMENTAL
 
 //GLM
@@ -27,8 +26,7 @@ std::mutex myMutex;
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp> //to string
 
-
-//ourShader
+//include own Shader
 #include "Shader.h"
 
 //Key, cursor and error callback handling
@@ -40,16 +38,11 @@ using namespace std;
 //--------------------------------------
 // CONFIG
 //-------------------------------------
-
-
 const int WIDTH = 1280, HEIGHT = 720; // initial size of window
 double zZoom = -20; //initial zoom
 
-
-const int AMOUNT_OF_BOIDS = 500;
+const int AMOUNT_OF_BOIDS = 250;
 const int GENERATION_RADIUS_FOR_BOIDS = 400;
-
-
 
 const int PERCEPTION_RADIUS_COHESION 		= 20;
 const int PERCEPTION_RADIUS_ALIGNMENT 	= 20;
@@ -64,24 +57,28 @@ const float MAX_SPEED = 0.5;
 
 
 
-
 vector<Boid> BOIDS; //vector with boid objects
 bool RUNNING = true; //To stop threads later (clean after yourself)
 
 glm::mat4 *setupBoids(int amount , float radius_max){
+	/*! Generate model matrices and boids
+	Function that generates a number of boids in a sphere with a 
+	specific radius.
 
-	/*Generates an amount of Boids inside a Sphere with a radius*/
+	@param amount Number of boids to create
+	@param radius_max The maximum radius at which the boids get generated  
+	*/
+
 	float x, y, z, rotAngle;
 	glm::vec3 position;
 	glm::vec3 rotVec;
-
 	glm::mat4* modelMatrices = new glm::mat4[amount];
+
 
 	cout << "Generating positions for Boids: " << endl;
 	for (int i = 0; i < amount; ++i){
 		//Generating random points inside a sphere with "kugelkoordinaten"
 		glm::mat4 model(1.0f);
-
 		do{
 			x = dis(eng) * radius_max;
 			y = dis(eng) * radius_max;
@@ -127,7 +124,7 @@ void timestep(double function_call_delay){
 			//-------------------------------------
 			std::lock_guard<std::mutex> guard(myMutex); // the access to this function is mutually exclusive
 			for (int i = 0; i < BOIDS.size(); ++i){		
-				BOIDS[i].timestep(1.0f);
+				BOIDS[i].timestep(0.9f);
 				BOIDS[i].resetforce(); /*After the timestep is calculated reset force (acceleration)*/
 			}
 
@@ -155,7 +152,7 @@ int main(void){
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	/* Create a windowed mode window and its OpenGL context */
-	window = glfwCreateWindow(WIDTH, HEIGHT, "Birds", NULL, NULL);
+	window = glfwCreateWindow(WIDTH, HEIGHT, "Boids", NULL, NULL);
 	if (!window)
 	{
 		glfwTerminate();

@@ -5,16 +5,18 @@
 - [GLAD](https://github.com/Dav1dde/glad)  
 > glad could work without installing since I've added my own glad files in the src folder  
 - [GLM](https://glm.g-truc.net/0.9.9/index.html)  
-- make  
 
 ### How to run:
 
-1. Download or clone git  
-2. compile  
+1. compile  
 ```bash
-make makefile all
+make all
 ```
-3. run
+2. run
 ```bash
 ./main.exec
 ```
+
+### Example
+
+![Alt Text](./example.gif)
